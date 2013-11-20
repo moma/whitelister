@@ -4,7 +4,7 @@ echo '<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>';
  * prend un répertoire white liste et un répertoire de csv à merger et pré-tagge les champs. 
 Conserve pas les groupements des white liste existantes.
  */
-include("../common/library/fonctions_php.php");
+//include("../common/library/fonctions_php.php");
 
 // variables
 $delimiter = "\t";
@@ -202,6 +202,13 @@ fclose($output);
 
 pt($main_form_count.' forms processed in new white lists with '.count($merged_lists).' forms unique in the final list ' .$valid_forms.' pretagged and '.$stop_forms.' stopped' );
 
+function pta($array){
+    print_r($array);
+    echo '<br/>';
+}
 
+function pt($string){
+    echo $string.'<br/>';
+}
  
 ?>
