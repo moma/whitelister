@@ -80,9 +80,8 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                             $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
                             $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                            $line[$forms_col_number+1]=$final_forms;
-                            array_unshift($line,'x');
-                            $merged_lists[$key]=$line;                        
+                            $merged_lists[$key][$forms_col_number]=$final_forms; 
+                            $merged_lists[$key][0]='x';                         
                         }else{                            
                             array_unshift($line,'x');
                             $merged_lists[$key]=$line;                        
@@ -156,8 +155,8 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
                         $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
                         $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                         $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                        $line[$forms_col_number+1]=$final_forms;
-                        $merged_lists[$key]=$line;                        
+                        $merged_lists[$key][$forms_col_number]=$final_forms; 
+                        $merged_lists[$key][0]='x';                         
                     }else{
                         $merged_lists[$key]=$line;                        
                     }                    
@@ -171,8 +170,8 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
                             $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
                             $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                            $line[$forms_col_number+1]=$final_forms;
-                            $merged_lists[$key]=$line;     
+                            $merged_lists[$key][$forms_col_number]=$final_forms; 
+                            $merged_lists[$key][0]='w';                            
                         }
                                            
                     }else{
