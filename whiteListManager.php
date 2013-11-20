@@ -12,7 +12,7 @@ $delimiter = "\t";
 $enclosure = [] ;
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
-$tag_column='sort (type "x" to keep the word for indexation'; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
+$tag_column='sort (type "x" to keep the word for indexation, "w" to delete it)'; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
 //spécifiée ou n'existe pas, on prends la première colonne où il y a des 'x'.
 $white_forms=array(); // liste des formes rencontrées dans les whites lists
 $forms_col='forms'; // colonne stockant les formes à considérer
@@ -35,7 +35,7 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne
                 pta($line);
-                $tag_column_number=array_search($tag_column, $line);
+                $tag_column_number=array_search($tag_column, $line);               
                 $forms_col_number=array_search($forms_col, $line);
                 pt('TAG: '.$tag_column_number);
                 $raw_num+=1;                
@@ -46,10 +46,11 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                 $key=str_replace('.','', $key);
                 $key=str_replace(',','', $key);
 
+
                 if (!$tag_column_number){// il n'y a pas de colonne 'x' on prend toutes les lignes
                     // modify white forms
                     $forms=split($forms_sep, $line[$forms_col_number]);
-                    foreach ($forms as $key => $form) {
+                    foreach ($forms as $key1 => $form) {
                         $white_forms[trim($form)]=1;
                     }                    
                     // modify merged list
@@ -58,16 +59,20 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                         $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                         $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
                         $line[$forms_col_number+1]=$final_forms;
+                        array_unshift($line,'x');
                         $merged_lists[$key]=$line;                        
                     }else{
-                        $merged_lists[$key]=$line;                        
+                        $merged_lists[$key]=$line;     
+                        array_unshift($line,'x');                   
                     }          
 
                 }else{// il y a une de colonne 'x' on ne considere que celles qui on un 'x'
-                    if ($line[$tag_column_number]=='x'){     
+                
+                    if (trim($line[$tag_column_number])=='x'){   
+
                         // modify white forms               
                         $forms=explode($forms_sep, $line[$forms_col_number]);
-                        foreach ($forms as $key => $form) {
+                        foreach ($forms as $key1 => $form) {
                             $white_forms[trim($form)]=1;
                         }
                         // modify merged list
@@ -76,8 +81,10 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                             $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
                             $line[$forms_col_number+1]=$final_forms;
+                            array_unshift($line,'x');
                             $merged_lists[$key]=$line;                        
-                        }else{
+                        }else{                            
+                            array_unshift($line,'x');
                             $merged_lists[$key]=$line;                        
                         } 
                     }
@@ -88,11 +95,14 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
     fclose($handle);
 }
 //$white_forms=array_keys($white_forms);
-
+pt('keys');
+pta(    array_keys($merged_lists));
 if ($keep_all_whitewords==0){
     $merged_lists=array();// white liste finale à écrire
 }
 
+
+pt(count($merged_lists).' terms in existing white lists');
 // rewrite of candidate white lists with merge
 
 $header_writen=0;
