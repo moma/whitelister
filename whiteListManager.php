@@ -1,5 +1,4 @@
 <?php
-echo 'toto';
 echo '<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>';
 /*
  * prend un répertoire white liste et un répertoire de csv à merger et pré-tagge les champs. 
@@ -29,15 +28,14 @@ $main_form_count=0;
 $merged_lists=array();// white liste finale à écrire
 
 // on extrait toutes les formes valides
+pt('processing '.$white_list_folder.' as white list source');
 foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
     $raw_num=0;
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne
-                pta($line);
                 $tag_column_number=array_search($tag_column, $line);               
                 $forms_col_number=array_search($forms_col, $line);
-                pt('TAG: '.$tag_column_number);
                 $raw_num+=1;                
             }else{// on stocke toutes les formes et on fait un pré-fichier de white liste
                 $unique_id_column=array_search($unique_id, $line); 
@@ -95,8 +93,6 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
     fclose($handle);
 }
 //$white_forms=array_keys($white_forms);
-pt('keys');
-pta(    array_keys($merged_lists));
 if ($keep_all_whitewords==0){
     $merged_lists=array();// white liste finale à écrire
 }
@@ -107,13 +103,12 @@ pt(count($merged_lists).' terms in existing white lists');
 
 $header_writen=0;
 
-
+pt('processing '.$folder_to_process.' as list to process');
 foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
     $raw_num=0;
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne
-                pta($line);
                 $tag_column_number=array_search($tag_column, $line);
                 $forms_col_number=array_search($forms_col, $line);
                 $unique_id_column=array_search($unique_id, $line);
