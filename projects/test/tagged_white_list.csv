@@ -1,8 +1,9 @@
 tag	"sort (type ""x"" to keep the word for indexation, ""w"" to delete it)"	stem	"main form"	forms
+g		"adolescent girls"	"adolescent girls"	"adolescent girls|&|adolescents"
 x		"absent father"	"absent fathers"	"absent fathers|&|absent father|&|father absent"
 x		"black girl"	"Black Girls"	"Black Girls|&|Black girls|&|black girls|&|white girls|&|red girls"
 g		youth	youth	"youth|&|young people"
 g		"15-24 age"	"ages 15-24"	"ages 15-24|&|ages of 15-24|&|youth|&|young people"
-x	x	"adolesc girl"	"adolescent girls"	"adolescent girls"
-x	x	adolesc	adolescents	adolescents|&|adolescent|&|Adolescent|&|adolescence|&|Adolescents
+g	x	"adolesc girl"	"adolescent girls"	"adolescent girls|&|adolescents"
+x	x	adolesc	adolescents	"adolescents|&|adolescent|&|Adolescent|&|adolescence|&|Adolescents|&|adolescent girls"
 x		"16-24 age"	"ages 16-24"	"ages 16-24|&|ages of 16-24|&|youth|&|ages 15-24|&|ages of 15-24|&|young people"

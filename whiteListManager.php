@@ -2,7 +2,8 @@
 echo '<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>';
 /*
  * prend un répertoire white liste et un répertoire de csv à merger et pré-tagge les champs. 
-Conserve pas les groupements des white liste existantes.
+Conserve les groupements des white liste existantes. Si deux lignes ont une forme en commun, elles
+seront mergées.
  */
 //include("../common/library/fonctions_php.php");
 
@@ -16,6 +17,7 @@ $project_name='test';
 
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
+$synonyms_folder='synonyms';
 
 // colonnes obligatoires ///////
 $tag_column='sort (type "x" to keep the word for indexation, "w" to delete it)'; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
@@ -38,6 +40,42 @@ $stop_forms=0;// count the number of stopped forms
 $main_form_count=0;
 
 $merged_lists=array();// white liste finale à écrire
+
+echo '-------- synonyms ---------';
+// on commence par importer des synonymes. Ils seront écrasés par les lignes suivantes si utilisés
+pt('processing '.'projects'.'/'.$project_name.'/'.$synonyms_folder.' as synonyms source');
+foreach (glob('projects'.'/'.$project_name.'/'.$synonyms_folder . "/*.csv") as $to_analyse) {
+    if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
+        pt('importing '.$to_analyse);
+        while (($line= fgetcsv($handle, 4096,',')) !== false) {
+            // on stocke toutes les formes et on fait un pré-fichier de white liste
+            $newline=array();// nouvelle ligne à mettre dans le tableau définitif avec les champs obligatoires : 0->tag, 1->stem, 2->main form, 3->forms
+
+            $key=trim($line[0]); // key to store this stem in the $merged_lists  
+            pta($line);          
+            $forms=implode($forms_sep, $line);
+            pt($forms);
+            foreach ($line as $key1 => $form) {
+                $white_forms[trim($form)]=1;
+            }                    
+            // modify merged list
+            if (array_key_exists($key,$merged_lists)){// on merge les regroupement
+                $existant_forms=explode($forms_sep,$merged_lists[$key][3]);
+                $added_forms=$line;
+                $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));                        
+                $merged_lists[$key][3]=$final_forms;                                        
+            }else{
+                $newline[0]='x';
+                $newline[1]=$key;
+                $newline[2]=$key;
+                $newline[3]=$forms;
+                $merged_lists[$key]=$newline;                   
+            }       
+
+        }                         
+    }
+    fclose($handle);      
+}
 
 // on extrait toutes les formes valides
 pt('processing '.'projects'.'/'.$project_name.'/'.$white_list_folder.' as white list source');
