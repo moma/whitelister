@@ -7,18 +7,28 @@ Conserve pas les groupements des white liste existantes.
 //include("../common/library/fonctions_php.php");
 
 // variables
+// cortext
 $delimiter = "\t";
-$enclosure = [] ;
+$enclosure = ' ' ;
+$enclosure_out='"'; // pour le fichier de sortie
+
+$project_name='test';
+
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
+
+// colonnes obligatoires ///////
 $tag_column='sort (type "x" to keep the word for indexation, "w" to delete it)'; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
 //spécifiée ou n'existe pas, on prends la première colonne où il y a des 'x'.
-$white_forms=array(); // liste des formes rencontrées dans les whites lists
-$stopped_forms=array();// liste des formes stoppées (w)
 $forms_col='forms'; // colonne stockant les formes à considérer
 $unique_id='stem'; // colonne avec identifiants unique des formes
+$main_form='main form';
+///////////////:
+
+$white_forms=array(); // liste des formes rencontrées dans les whites lists
+$stopped_forms=array();// liste des formes stoppées (w)
 $forms_sep='|&|'; // separateur de formes
-$keep_all_whitewords=1;// si 0, tagge simplement les éléments de $folder_to_process, sinon garde l'ensemble des white terms
+$keep_all_whitewords=1;// si 0, tagge simplement les éléments de $folder_to_process, sinon importe également l'ensemble des termes des white lists
 $out_file='tagged_white_list.csv';
 
 
@@ -30,46 +40,30 @@ $main_form_count=0;
 $merged_lists=array();// white liste finale à écrire
 
 // on extrait toutes les formes valides
-pt('processing '.$white_list_folder.' as white list source');
-foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
+pt('processing '.'projects'.'/'.$project_name.'/'.$white_list_folder.' as white list source');
+foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as $to_analyse) {
     $raw_num=0;
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
+        pt('importing '.$to_analyse);
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
-            if ($raw_num==0){// analyse de la première ligne
-                $tag_column_number=array_search($tag_column, $line);               
+            if ($raw_num==0){// analyse de la première ligne pour trouver les emplacements de colonnes obligatoires
+                $tag_column_number=array_search($tag_column, $line);
+                pt("tag field:".$tag_column_number);
                 $forms_col_number=array_search($forms_col, $line);
+                pt("forms field:".$forms_col_number);
+                $unique_id_column=array_search($unique_id, $line);                 
+                pt('unique id:'.$unique_id_column);
+                $main_form_column=array_search($main_form, $line);                 
                 $raw_num+=1;                
             }else{// on stocke toutes les formes et on fait un pré-fichier de white liste
-                $unique_id_column=array_search($unique_id, $line); 
-                $key=$line[$unique_id_column]; // key to store this stem in the $merged_lists
-                $key=str_replace(' ','_', $key);
-                $key=str_replace('.','', $key);
-                $key=str_replace(',','', $key);
+                $newline=array();// nouvelle ligne à mettre dans le tableau définitif avec les champs obligatoires : 0->tag, 1->stem, 2->main form, 3->forms
 
-
-                if (!$tag_column_number){// il n'y a pas de colonne 'x' on prend toutes les lignes
-                    // modify white forms
-                    $forms=split($forms_sep, $line[$forms_col_number]);
-                    foreach ($forms as $key1 => $form) {
-                        $white_forms[trim($form)]=1;
-                    }                    
-                    // modify merged list
-                    if (array_key_exists($key, $merged_lists)){// on merge les regroupement
-                        $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
-                        $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
-                        $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                        $line[$forms_col_number+1]=$final_forms;
-                        array_unshift($line,'x');
-                        $merged_lists[$key]=$line;                        
-                    }else{
-                        $merged_lists[$key]=$line;     
-                        array_unshift($line,'x');                   
-                    }          
-
-                }else{// il y a une de colonne 'x' on ne considere que celles qui on un 'x'
-                    
-                    if (trim($line[$tag_column_number])=='x'){   
-
+                $key=trim($line[$unique_id_column]); // key to store this stem in the $merged_lists
+                //$key=str_replace(' ','_', $key);
+                //$key=str_replace('.','', $key);
+                //$key=str_replace(',','', $key);
+                if ($tag_column_number>-1){   // il y a une de colonne 'x' on ne considere que celles qui on un 'x'                    
+                    if (trim($line[$tag_column_number])=='x'){                           
                         // modify white forms               
                         $forms=explode($forms_sep, $line[$forms_col_number]);
                         foreach ($forms as $key1 => $form) {
@@ -78,13 +72,16 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                         // modify merged list
                         if (array_key_exists($key, $merged_lists)){// on merge les regroupement
                             $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
-                            $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
+                            $added_forms=explode($forms_sep,$line[$forms_col_number]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                            $merged_lists[$key][$forms_col_number]=$final_forms; 
+                            $merged_lists[$key][3]=$final_forms; 
                             $merged_lists[$key][0]='x';                         
-                        }else{                            
-                            array_unshift($line,'x');
-                            $merged_lists[$key]=$line;                        
+                        }else{   
+                            $newline[0]='x';
+                            $newline[1]=$line[$unique_id_column];
+                            $newline[2]=$line[$main_form_column];
+                            $newline[3]=$line[$forms_col_number];
+                            $merged_lists[$key]=$newline;                                                    
                         } 
                     }elseif (trim($line[$tag_column_number][0])=='w'){   
                         // modify stopped forms          
@@ -93,6 +90,28 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
                             $stopped_forms[trim($form)]=1;
                         }
                     }
+
+                }else{
+                    // il n'y a pas de colonne 'x' on prend toutes les lignes
+                    // modify white forms
+
+                    $forms=split($forms_sep, $line[$forms_col_number]);
+                    foreach ($forms as $key1 => $form) {
+                        $white_forms[trim($form)]=1;
+                    }                    
+                    // modify merged list
+                    if (array_key_exists($key,$merged_lists)){// on merge les regroupement
+                        $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
+                        $added_forms=explode($forms_sep,$line[$forms_col_number]);
+                        $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));                        
+                        $merged_lists[$key][3]=$final_forms;                        
+                    }else{
+                        $newline[0]='x';
+                        $newline[1]=$line[$unique_id_column];
+                        $newline[2]=$line[$main_form_column];
+                        $newline[3]=$line[$forms_col_number];
+                        $merged_lists[$key]=$newline;                   
+                    }       
                 }                
             }                         
         }        
@@ -100,24 +119,54 @@ foreach (glob($white_list_folder . "/*.csv") as $to_analyse) {
     fclose($handle);
 }
 //$white_forms=array_keys($white_forms);
+//pt('final merged list');
+//pta($merged_lists);
+
+
 if ($keep_all_whitewords==0){
     $merged_lists=array();// white liste finale à écrire
 }
 
 pt(count($merged_lists).' terms in existing white lists');
+flush();
 // rewrite of candidate white lists with merge
 
 $header_writen=0;
+$final_white_list=array();
 
-pt('processing '.$folder_to_process.' as list to process');
-foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
+$merged_list_formated=false;
+
+pt('processing '.'projects'.'/'.$project_name.'/'.$folder_to_process.' as list to process');
+flush();
+foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as $to_analyse) {
+    // !!!! pour le moment, on fait l'hypothèse que tous les fichiers à traiter sont dans le même format
     $raw_num=0;
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne
                 $tag_column_number=array_search($tag_column, $line);
+                pt('Tag : '.$tag_column_number);
                 $forms_col_number=array_search($forms_col, $line);
+                pt('Form : '.$forms_col_number);                
                 $unique_id_column=array_search($unique_id, $line);
+                pt('unique id column : '.$unique_id_column);
+                $main_form_column=array_search($main_form, $line);   
+                
+                if (!$merged_list_formated){// mets les whites listes au nouveau format traité
+                    $merged_list_formated=true;
+                    $line_template=$line; 
+                    foreach ($line_template as $key => $value) {
+                        $line_template[$key]='';
+                    }
+                    foreach ($merged_lists as $key => $value) {
+                        $final_white_list[$key]=$line_template;
+                        $final_white_list[$key][0]='x';
+                        $final_white_list[$key][$unique_id_column+1]=$value[1];
+                        $final_white_list[$key][$main_form_column+1]=$value[2];
+                        $final_white_list[$key][$forms_col_number+1]=$value[3];
+                    }                    
+                }
+
                 $raw_num+=1;                
                 if ($header_writen==0){
                     $header_writen+=1;
@@ -125,8 +174,9 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
                     array_unshift($header,'tag');                    
                 }
             }else{// check forms 
+
                 $main_form_count+=1;                                 
-                $forms=explode($forms_sep, $line[$forms_col_number]);
+                $forms=explode($forms_sep, $line[$forms_col_number]);                
                 $ok=0; // on l'accepte
                 $stopped=0; // we reject
                 foreach ($forms as $key => $form) {
@@ -140,10 +190,10 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
                 if ($line[$tag_column_number]=='x'){
                     $ok=1;
                 }
-                $key=$line[$unique_id_column];
-                $key=str_replace(' ','_', $key);
-                $key=str_replace('.','', $key);
-                $key=str_replace(',','', $key);
+                $key=trim($line[$unique_id_column]);
+                //$key=str_replace(' ','_', $key);
+                //$key=str_replace('.','', $key);
+                //$key=str_replace(',','', $key);
                 
                 //pta(array_unshift($line,'x'));
                 //pta(array_unshift($line,'x'));  
@@ -151,35 +201,36 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
                     //pt('In White liste :'.$line[$forms_col_number]);      
                     $valid_forms+=1;
                     array_unshift($line,'x');
-                    if (array_key_exists($key, $merged_lists)){// on merge les regroupement
-                        $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
+                    if (array_key_exists($key, $final_white_list)){// on merge les regroupement
+                        $existant_forms=explode($forms_sep,$final_white_list[$key][$forms_col_number]);
                         $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                         $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                        $merged_lists[$key][$forms_col_number]=$final_forms; 
-                        $merged_lists[$key][0]='x';                         
+                        $final_white_list[$key]=$line;
+                        $final_white_list[$key][$forms_col_number+1]=$final_forms;                                             
                     }else{
-                        $merged_lists[$key]=$line;                        
+                        $final_white_list[$key]=$line;                        
                     }                    
                 }elseif($stopped==1){
                     $stop_forms+=1;
                     array_unshift($line,'w');
-                    if (array_key_exists($key, $merged_lists)){// on merge les regroupement
-                        if ($merged_lists[$key][0]=='x'){
-                            pt('waring conflit in tagging with '.$merged_lists[$key][$forms_col_number].' accepted and'.$line[$forms_col_number+1].' rejected');
+                    if (array_key_exists($key, $final_white_list)){// on merge les regroupement
+                        if ($final_white_list[$key][0]=='x'){
+                            pt('warning conflit in tagging with '.$final_white_list[$key][$forms_col_number].' accepted and'.$line[$forms_col_number+1].' rejected');
+                            flush();
                         }else{
-                            $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
+                            $existant_forms=explode($forms_sep,$final_white_list[$key][$forms_col_number+1]);
                             $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
-                            $merged_lists[$key][$forms_col_number]=$final_forms; 
-                            $merged_lists[$key][0]='w';                            
+                            $final_white_list[$key]=$line;
+                            $final_white_list[$key][$forms_col_number]=$final_forms;                                                     
                         }
                                            
                     }else{
-                        $merged_lists[$key]=$line;                        
+                        $final_white_list[$key]=$line;                        
                     }
                 }else{
                     array_unshift($line,$line[$tag_column_number]);
-                    $merged_lists[$key]=$line;
+                    $final_white_list[$key]=$line;
                     
                 }                
             }                         
@@ -187,15 +238,83 @@ foreach (glob($folder_to_process. "/*.csv") as $to_analyse) {
     }
     fclose($handle);
 }
-//pta($merged_lists);
-// write the final list
-$output= fopen($out_file, "w","UTF-8");
-// header
-fputcsv($output,$header,$delimiter); 
 
-foreach ($merged_lists as $key => $value) {
+/// removing trailong spaces (should be optimized well before)
+foreach ($final_white_list as $key => $value) {
+    $forms=explode($forms_sep,$value[$forms_col_number+1]);  
+    foreach ($forms as $key2 => $form) {
+        $forms[$key2]=trim($form);        
+    }    
+    $final_white_list[$key][$forms_col_number+1]=implode('|&|',$forms);
+}
+
+
+//////////////////////////
+/// Grouping  ////////////
+//////////////////////////
+// On mets ensemble toutes les lignes qui partagent au moins une forme
+$forms_map=array(); // tableau dont les clé sont les formes et les valeurs les formes principales
+$output_white_list=$final_white_list;
+
+foreach ($final_white_list as $key => $value) {// on parcours les lignes
+    pt('processing '.$key);
+    if ($value[0]!='g'){// si elle n'est pas déjà groupée
+        pt($value[$forms_col_number+1]);
+        $forms=explode($forms_sep,$value[$forms_col_number+1]);
+        $lines2group=array();// list des clé des lignes de $final_white_list qu'il faudra grouper
+           foreach ($forms as $key1 => $form) {
+        if (array_key_exists($form,$forms_map)){
+            $lines2group[]=$forms_map[$form];    
+        }else{
+            $forms_map[$form]=$value[$unique_id_column+1];
+        }        
+    }
+        pt($key.' to group with');pta($lines2group);
+        if (count($lines2group)>0){// on regroupe les lignes concernées
+            pt('grouping');
+            $line=$value;
+            $forms2add=array();
+            foreach ($lines2group as $key2group) {
+                $existant_forms=explode($forms_sep,$output_white_list[$key2group][$forms_col_number+1]);
+                $forms2add=array_merge($forms2add,$existant_forms);            
+            }
+            $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
+            pta(array_unique(array_merge($added_forms,$forms2add)));
+            $final_forms=implode('|&|', array_unique(array_merge($added_forms,$forms2add)));
+            pt('final forms:'.$final_forms);
+            $output_white_list[$key][$forms_col_number+1]=$final_forms;
+            foreach ($lines2group as $key2) {// 
+                $output_white_list[$key2][0]='g';
+                // puis on rectifie le mapping formes : clé uniques
+                pt('clé:'.$key2);
+                $to_remap=array_keys($forms_map,$key2);
+                pt('remap');
+                pta($to_remap);
+                foreach ($to_remap as $form2 => $value4) {
+                    $forms_map[$value4]=$key;  
+                }
+            }
+            pt('forms maps');
+            print_r($forms_map);
+
+        }else{
+            $output_white_list[$key]=$value;
+        }   
+    }
+    
+}
+//pt('');
+//pt('final white');
+//pta($output_white_list);
+
+// write the final list
+$output= fopen('projects'.'/'.$project_name.'/'.$out_file, "w","UTF-8");
+// header
+fputcsv($output,$header,$delimiter,$enclosure_out); 
+
+foreach ($output_white_list as $key => $value) {
     //pta($value);
-    fputcsv($output,$value,$delimiter); 
+    fputcsv($output,$value,$delimiter,$enclosure_out); 
 }
 fclose($output);
 
