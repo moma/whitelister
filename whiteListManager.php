@@ -1,19 +1,19 @@
 <?php
 echo '<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>';
 /*
- * prend un répertoire white liste et un répertoire de csv à merger et pré-tagge les champs. 
+ * prend un répertoire white liste et un répertoire 'to_process' de csv à merger et pré-tagge les champs. 
 Conserve les groupements des white liste existantes. Si deux lignes ont une forme en commun, elles
 seront mergées.
+On peut mettre des synonymes dans le répertoire synonyms, tous les termes synonymes seront fusionnés au niveau des formes.
  */
-//include("../common/library/fonctions_php.php");
 
-// variables
-// cortext
+$debug_strong='detention centers';
+
 $delimiter = "\t";
 $enclosure = ' ' ;
 $enclosure_out='"'; // pour le fichier de sortie
 
-$project_name='test';
+$project_name='rock';
 
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
@@ -38,6 +38,7 @@ $out_file='tagged_white_list.csv';
 $valid_forms=0; // count the number of pretagged forms
 $stop_forms=0;// count the number of stopped forms
 $main_form_count=0;
+$group_count=0;
 
 $merged_lists=array();// white liste finale à écrire
 
@@ -52,9 +53,9 @@ foreach (glob('projects'.'/'.$project_name.'/'.$synonyms_folder . "/*.csv") as $
             $newline=array();// nouvelle ligne à mettre dans le tableau définitif avec les champs obligatoires : 0->tag, 1->stem, 2->main form, 3->forms
 
             $key=trim($line[0]); // key to store this stem in the $merged_lists  
-            pta($line);          
+            ///pta($line);          
             $forms=implode($forms_sep, $line);
-            pt($forms);
+            ///pt($forms);
             foreach ($line as $key1 => $form) {
                 $white_forms[trim($form)]=1;
             }                    
@@ -62,7 +63,8 @@ foreach (glob('projects'.'/'.$project_name.'/'.$synonyms_folder . "/*.csv") as $
             if (array_key_exists($key,$merged_lists)){// on merge les regroupement
                 $existant_forms=explode($forms_sep,$merged_lists[$key][3]);
                 $added_forms=$line;
-                $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));                        
+                $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms))); 
+                $group_count+=1;
                 $merged_lists[$key][3]=$final_forms;                                        
             }else{
                 $newline[0]='x';
@@ -76,7 +78,8 @@ foreach (glob('projects'.'/'.$project_name.'/'.$synonyms_folder . "/*.csv") as $
     }
     fclose($handle);      
 }
-
+ptbg('synonyms --------------');
+ptabg($merged_lists);
 // on extrait toutes les formes valides
 pt('processing '.'projects'.'/'.$project_name.'/'.$white_list_folder.' as white list source');
 foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as $to_analyse) {
@@ -113,7 +116,8 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
                             $added_forms=explode($forms_sep,$line[$forms_col_number]);
                             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
                             $merged_lists[$key][3]=$final_forms; 
-                            $merged_lists[$key][0]='x';                         
+                            $merged_lists[$key][0]='x';
+                            $group_count+=1;                         
                         }else{   
                             $newline[0]='x';
                             $newline[1]=$line[$unique_id_column];
@@ -133,15 +137,16 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
                     // il n'y a pas de colonne 'x' on prend toutes les lignes
                     // modify white forms
 
-                    $forms=split($forms_sep, $line[$forms_col_number]);
+                    $forms=explode($forms_sep, $line[$forms_col_number]);                    
                     foreach ($forms as $key1 => $form) {
-                        $white_forms[trim($form)]=1;
-                    }                    
+                    $white_forms[trim($form)]=1;
+                    }                                            
                     // modify merged list
                     if (array_key_exists($key,$merged_lists)){// on merge les regroupement
                         $existant_forms=explode($forms_sep,$merged_lists[$key][$forms_col_number]);
                         $added_forms=explode($forms_sep,$line[$forms_col_number]);
-                        $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));                        
+                        $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
+                        $group_count+=1;                        
                         $merged_lists[$key][3]=$final_forms;                        
                     }else{
                         $newline[0]='x';
@@ -155,10 +160,9 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
         }        
     }
     fclose($handle);
+
 }
 //$white_forms=array_keys($white_forms);
-//pt('final merged list');
-//pta($merged_lists);
 
 
 if ($keep_all_whitewords==0){
@@ -190,7 +194,7 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                 pt('unique id column : '.$unique_id_column);
                 $main_form_column=array_search($main_form, $line);   
                 
-                if (!$merged_list_formated){// mets les whites listes au nouveau format traité
+                if (!$merged_list_formated){// intègre les whites listes au nouveau format traité
                     $merged_list_formated=true;
                     $line_template=$line; 
                     foreach ($line_template as $key => $value) {
@@ -204,7 +208,7 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                         $final_white_list[$key][$forms_col_number+1]=$value[3];
                     }                    
                 }
-
+                ptabg($final_white_list);
                 $raw_num+=1;                
                 if ($header_writen==0){
                     $header_writen+=1;
@@ -212,7 +216,6 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                     array_unshift($header,'tag');                    
                 }
             }else{// check forms 
-
                 $main_form_count+=1;                                 
                 $forms=explode($forms_sep, $line[$forms_col_number]);                
                 $ok=0; // on l'accepte
@@ -240,11 +243,13 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                     $valid_forms+=1;
                     array_unshift($line,'x');
                     if (array_key_exists($key, $final_white_list)){// on merge les regroupement
-                        $existant_forms=explode($forms_sep,$final_white_list[$key][$forms_col_number]);
+                        $existant_forms=explode($forms_sep,$final_white_list[$key][$forms_col_number+1]);
                         $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
                         $final_forms=implode('|&|', array_unique(array_merge($added_forms,$existant_forms)));
+                        
                         $final_white_list[$key]=$line;
-                        $final_white_list[$key][$forms_col_number+1]=$final_forms;                                             
+                        $final_white_list[$key][$forms_col_number+1]=$final_forms;
+                        $group_count+=1;                                                                     
                     }else{
                         $final_white_list[$key]=$line;                        
                     }                    
@@ -275,7 +280,11 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
         }        
     }
     fclose($handle);
+
 }
+//pt('white keepts');
+//pta($final_white_list);
+
 
 /// removing trailong spaces (should be optimized well before)
 foreach ($final_white_list as $key => $value) {
@@ -286,6 +295,8 @@ foreach ($final_white_list as $key => $value) {
     $final_white_list[$key][$forms_col_number+1]=implode('|&|',$forms);
 }
 
+ptbg('final merged list');
+ptabg($final_white_list);
 
 //////////////////////////
 /// Grouping  ////////////
@@ -295,10 +306,14 @@ $forms_map=array(); // tableau dont les clé sont les formes et les valeurs les 
 $output_white_list=$final_white_list;
 
 foreach ($final_white_list as $key => $value) {// on parcours les lignes
-    pt('processing '.$key);
+    //pt('processing '.$key);
+    ptbg('$output_white_list');
+    ptabg($output_white_list);
     if ($value[0]!='g'){// si elle n'est pas déjà groupée
-        pt($value[$forms_col_number+1]);
+        //pt($value[$forms_col_number+1]);
         $forms=explode($forms_sep,$value[$forms_col_number+1]);
+        ptbg('$forms');
+        ptabg($forms);
         $lines2group=array();// list des clé des lignes de $final_white_list qu'il faudra grouper
            foreach ($forms as $key1 => $form) {
         if (array_key_exists($form,$forms_map)){
@@ -307,33 +322,36 @@ foreach ($final_white_list as $key => $value) {// on parcours les lignes
             $forms_map[$form]=$value[$unique_id_column+1];
         }        
     }
-        pt($key.' to group with');pta($lines2group);
+        ptbg('$forms_map');
+        ptabg($forms_map);
+        ptbg($key.' to group with');ptabg($lines2group);
         if (count($lines2group)>0){// on regroupe les lignes concernées
-            pt('grouping');
+            //pt('grouping');
             $line=$value;
             $forms2add=array();
             foreach ($lines2group as $key2group) {
                 $existant_forms=explode($forms_sep,$output_white_list[$key2group][$forms_col_number+1]);
-                $forms2add=array_merge($forms2add,$existant_forms);            
+                $forms2add=array_merge($forms2add,$existant_forms);    
+                $group_count+=1;        
             }
             $added_forms=explode($forms_sep,$line[$forms_col_number+1]);
-            pta(array_unique(array_merge($added_forms,$forms2add)));
+            //pta(array_unique(array_merge($added_forms,$forms2add)));
             $final_forms=implode('|&|', array_unique(array_merge($added_forms,$forms2add)));
-            pt('final forms:'.$final_forms);
+            //pt('final forms:'.$final_forms);
             $output_white_list[$key][$forms_col_number+1]=$final_forms;
             foreach ($lines2group as $key2) {// 
                 $output_white_list[$key2][0]='g';
                 // puis on rectifie le mapping formes : clé uniques
-                pt('clé:'.$key2);
+                //pt('clé:'.$key2);
                 $to_remap=array_keys($forms_map,$key2);
-                pt('remap');
-                pta($to_remap);
+                //pt('remap');
+                //pta($to_remap);
                 foreach ($to_remap as $form2 => $value4) {
                     $forms_map[$value4]=$key;  
                 }
             }
-            pt('forms maps');
-            print_r($forms_map);
+            //pt('forms maps');
+            //print_r($forms_map);
 
         }else{
             $output_white_list[$key]=$value;
@@ -356,7 +374,7 @@ foreach ($output_white_list as $key => $value) {
 }
 fclose($output);
 
-pt($main_form_count.' forms processed in new white lists with '.count($merged_lists).' forms unique in the final list ' .$valid_forms.' pretagged and '.$stop_forms.' stopped' );
+pt($main_form_count.' forms processed in new white lists with '.count($merged_lists).' white forms unique in the final list ' .$valid_forms.' pretagged and '.$stop_forms.' stopped and '.$group_count.' grouped');
 
 function pta($array){
     print_r($array);
@@ -367,4 +385,14 @@ function pt($string){
     echo $string.'<br/>';
 }
  
+function ptabg($array){// debug variant
+    //print_r($array);
+    //echo '<br/>';
+}
+
+function ptbg($string){// debug variant
+    //echo $string.'<br/>';
+}
+ 
+
 ?>
