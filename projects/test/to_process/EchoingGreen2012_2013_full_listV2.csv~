@@ -1,4 +1,0 @@
-"sort (type ""x"" to keep the word for indexation	 ""w"" to delete it)"	stem	main form	forms	n	C-value	tfidf (number of occ x inverse documents frequency)	Specificity	Total number of Occurrences	Total number of Cooccurrenes	?				
-x	adolesc girl	adolescent girls	adolescent girls	2	36	1937056567	223	121198138	265	895713038	17	0	614	0	羌
-x	adolesc	adolescents	adolescents|&|adolescent|&|Adolescent|&|adolescence|&|Adolescents	1	225	378290196	834	854614093	366	894018946	178	0	28108	0	̆
-	16-24 age	ages 16-24	ages 16-24|&|ages of 16-24|&|youth	2	40	9146237858	207	419499517	249	512590738	25	0	3155	0	,894018ڑ
