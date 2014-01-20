@@ -20,7 +20,7 @@ $folder_to_process='to_process'; // répertoire avec des csv à tagger
 $synonyms_folder='synonyms';
 
 // colonnes obligatoires ///////
-$tag_column='sort (type "x" to keep the word for indexation, "w" to delete it)'; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
+$tag_column='sort (type "x" to keep the word for indexation, "w" to delete it)' ; // colonne où on mets les 'x' (selectionner) et les 'w'  supprimer. Si elle n'est pas
 //spécifiée ou n'existe pas, on prends la première colonne où il y a des 'x'.
 $forms_col='forms'; // colonne stockant les formes à considérer
 $unique_id='stem'; // colonne avec identifiants unique des formes
