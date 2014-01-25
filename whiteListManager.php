@@ -176,7 +176,20 @@ flush();
 $header_writen=0;
 $final_white_list=array(); // final white list with first column with tag w,x,g or other
 
-$merged_list_formated=false;
+
+if (!$merged_list_formated){ // intègre les whites listes au nouveau format traité
+                    $line_template=$line; // patron
+                    foreach ($line_template as $key => $value) {
+                        $line_template[$key]='';
+                    }
+                    foreach ($merged_lists as $key => $value) {
+                        $final_white_list[$key]=$line_template;
+                        $final_white_list[$key][0]='x';
+                        $final_white_list[$key][$unique_id_column+1]=$value[1];
+                        $final_white_list[$key][$main_form_column+1]=$value[2];
+                        $final_white_list[$key][$forms_col_number+1]=$value[3];
+                    }                    
+                }
 
 pt('processing '.'projects'.'/'.$project_name.'/'.$folder_to_process.' as list to process');
 flush();
@@ -197,22 +210,7 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                 pt('Form column: '.$forms_col_number);                
                 $unique_id_column=array_search($unique_id, $line);
                 pt('Unique id column : '.$unique_id_column);
-                $main_form_column=array_search($main_form, $line);   
-                
-                if (!$merged_list_formated){ // intègre les whites listes au nouveau format traité
-                    $merged_list_formated=true;
-                    $line_template=$line; // patron
-                    foreach ($line_template as $key => $value) {
-                        $line_template[$key]='';
-                    }
-                    foreach ($merged_lists as $key => $value) {
-                        $final_white_list[$key]=$line_template;
-                        $final_white_list[$key][0]='x';
-                        $final_white_list[$key][$unique_id_column+1]=$value[1];
-                        $final_white_list[$key][$main_form_column+1]=$value[2];
-                        $final_white_list[$key][$forms_col_number+1]=$value[3];
-                    }                    
-                }
+                $main_form_column=array_search($main_form, $line);                   
                 ptabg($final_white_list);
                 $raw_num+=1;                
                 if ($header_writen==0){
@@ -295,6 +293,7 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
 //pta($final_white_list);
 
 
+
 /// removing trailong spaces (should be optimized well before)
 foreach ($final_white_list as $key => $value) {
     $forms=explode($forms_sep,$value[$forms_col_number+1]);  
@@ -306,7 +305,6 @@ foreach ($final_white_list as $key => $value) {
 
 ptbg('final merged list');
 ptabg($final_white_list);
-
 //////////////////////////
 /// Grouping  ////////////
 //////////////////////////
