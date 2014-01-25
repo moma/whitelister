@@ -13,7 +13,7 @@ $delimiter = "\t";
 $enclosure = ' ' ;
 $enclosure_out='"'; // pour le fichier de sortie
 
-$project_name='rock';
+$project_name='ademe_fr';
 
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
@@ -174,7 +174,7 @@ flush();
 // rewrite of candidate white lists with merge
 
 $header_writen=0;
-$final_white_list=array();
+$final_white_list=array(); // final white list with first column with tag w,x,g or other
 
 $merged_list_formated=false;
 
@@ -186,17 +186,22 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne
-                $tag_column_number=array_search($tag_column, $line);
-                pt('Tag : '.$tag_column_number);
+                $tag_column_number=array_search($tag_column, $line); 
+                if (strlen($tag_column_number)<1){
+                    pt('no pretagged forms');
+                }else{
+                    pt('Tag: '.$tag_column_number);    
+                }
+                
                 $forms_col_number=array_search($forms_col, $line);
-                pt('Form : '.$forms_col_number);                
+                pt('Form column: '.$forms_col_number);                
                 $unique_id_column=array_search($unique_id, $line);
-                pt('unique id column : '.$unique_id_column);
+                pt('Unique id column : '.$unique_id_column);
                 $main_form_column=array_search($main_form, $line);   
                 
-                if (!$merged_list_formated){// intègre les whites listes au nouveau format traité
+                if (!$merged_list_formated){ // intègre les whites listes au nouveau format traité
                     $merged_list_formated=true;
-                    $line_template=$line; 
+                    $line_template=$line; // patron
                     foreach ($line_template as $key => $value) {
                         $line_template[$key]='';
                     }
@@ -218,8 +223,8 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
             }else{// check forms 
                 $main_form_count+=1;                                 
                 $forms=explode($forms_sep, $line[$forms_col_number]);                
-                $ok=0; // on l'accepte
-                $stopped=0; // we reject
+                $ok=0; // accept if 1
+                $stopped=0; // reject if 1
                 foreach ($forms as $key => $form) {
                     if (array_key_exists(trim($form), $white_forms)){                        
                         $ok=1;                        
@@ -272,9 +277,13 @@ foreach (glob('projects'.'/'.$project_name.'/'.$folder_to_process. "/*.csv") as 
                         $final_white_list[$key]=$line;                        
                     }
                 }else{
-                    array_unshift($line,$line[$tag_column_number]);
-                    $final_white_list[$key]=$line;
-                    
+
+                    if (strlen($tag_column_number)<1){                        
+                        array_unshift($line,'');
+                    }else{
+                        array_unshift($line,$line[$tag_column_number]);    
+                    }                    
+                    $final_white_list[$key]=$line;                    
                 }                
             }                         
         }        
