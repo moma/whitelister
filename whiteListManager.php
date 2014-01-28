@@ -5,15 +5,20 @@ echo '<meta http-equiv="Content-type" content="text/html; charset=UTF-8"/>';
 Conserve les groupements des white liste existantes. Si deux lignes ont une forme en commun, elles
 seront mergées.
 On peut mettre des synonymes dans le répertoire synonyms, tous les termes synonymes seront fusionnés au niveau des formes.
+Two ways of launching the script :
+Commande line : php whiteListManager.php name_of_project
+http: localhost/directory/whiteListManager.php?project=name_of_project
  */
-
-$debug_strong='detention centers';
 
 $delimiter = "\t";
 $enclosure = ' ' ;
 $enclosure_out='"'; // pour le fichier de sortie
 
-$project_name='ademe_fr';
+if ($_GET) {
+    $project_name= $_GET['project']; // nombre de proce        
+} else {
+    $project_name= $argv[1]; // nom du projet    
+}
 
 $white_list_folder='whitelists';// répertoires avec whites listes déjà acceptées
 $folder_to_process='to_process'; // répertoire avec des csv à tagger
