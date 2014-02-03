@@ -103,7 +103,6 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
                 $raw_num+=1;                
             }else{// on stocke toutes les formes et on fait un pré-fichier de white liste
                 $newline=array();// nouvelle ligne à mettre dans le tableau définitif avec les champs obligatoires : 0->tag, 1->stem, 2->main form, 3->forms
-
                 $key=trim($line[$unique_id_column]); // key to store this stem in the $merged_lists
                 //$key=str_replace(' ','_', $key);
                 //$key=str_replace('.','', $key);
@@ -328,10 +327,16 @@ foreach ($final_white_list as $key => $value) {// on parcours les lignes
         ptabg($forms);
         $lines2group=array();// list des clé des lignes de $final_white_list qu'il faudra grouper
            foreach ($forms as $key1 => $form) {
-        if (array_key_exists($form,$forms_map)){
-            $lines2group[]=$forms_map[$form];    
+        if (array_key_exists(strtolower($form),$forms_map)){
+            $val=str_replace("'",'', strtolower($form));
+            $val=str_replace("-",'', strtolower($val));
+            $val=str_replace(" ",'', strtolower($val));            
+            $lines2group[]=$forms_map[$val];    
         }else{
-            $forms_map[$form]=$value[$unique_id_column+1];
+            $val=str_replace("'",'', strtolower($form));
+            $val=str_replace("-",'', strtolower($val));
+            $val=str_replace(" ",'', strtolower($val));            
+            $forms_map[$val]=$value[$unique_id_column+1];
         }        
     }
         ptbg('$forms_map');
