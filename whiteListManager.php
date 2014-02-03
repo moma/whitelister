@@ -326,19 +326,17 @@ foreach ($final_white_list as $key => $value) {// on parcours les lignes
         ptbg('$forms');
         ptabg($forms);
         $lines2group=array();// list des clé des lignes de $final_white_list qu'il faudra grouper
-           foreach ($forms as $key1 => $form) {
-        if (array_key_exists(strtolower($form),$forms_map)){
-            $val=str_replace("'",'', strtolower($form));
-            $val=str_replace("-",'', strtolower($val));
-            $val=str_replace(" ",'', strtolower($val));            
-            $lines2group[]=$forms_map[$val];    
-        }else{
-            $val=str_replace("'",'', strtolower($form));
-            $val=str_replace("-",'', strtolower($val));
-            $val=str_replace(" ",'', strtolower($val));            
-            $forms_map[$val]=$value[$unique_id_column+1];
-        }        
-    }
+        foreach ($forms as $key1 => $form) {
+            $val=strtolower($form);
+            $val=str_replace("'",'', $val);
+            $val=str_replace("-",'', $val);
+            $val=str_replace(" ",'', $val);
+            if ((array_key_exists($val,$forms_map))&&($forms_map[$val]!=$key)){                        
+                $lines2group[]=$forms_map[$val];    
+            }else{
+                $forms_map[$val]=$value[$unique_id_column+1];
+            }        
+        }
         ptbg('$forms_map');
         ptabg($forms_map);
         ptbg($key.' to group with');ptabg($lines2group);
@@ -357,7 +355,7 @@ foreach ($final_white_list as $key => $value) {// on parcours les lignes
             //pt('final forms:'.$final_forms);
             $output_white_list[$key][$forms_col_number+1]=$final_forms;
             foreach ($lines2group as $key2) {// 
-                $output_white_list[$key2][0]='g';
+                $output_white_list[$key2][0]='g ('.$key.')';
                 // puis on rectifie le mapping formes : clé uniques
                 //pt('clé:'.$key2);
                 $to_remap=array_keys($forms_map,$key2);
