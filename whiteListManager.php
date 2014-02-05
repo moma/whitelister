@@ -181,7 +181,7 @@ $header_writen=0;
 $final_white_list=array(); // final white list with first column with tag w,x,g or other
 
 
-if (!$merged_list_formated){ // intègre les whites listes au nouveau format traité
+// intègre les whites listes au nouveau format traité
                     $line_template=$line; // patron
                     foreach ($line_template as $key => $value) {
                         $line_template[$key]='';
@@ -192,8 +192,7 @@ if (!$merged_list_formated){ // intègre les whites listes au nouveau format tra
                         $final_white_list[$key][$unique_id_column+1]=$value[1];
                         $final_white_list[$key][$main_form_column+1]=$value[2];
                         $final_white_list[$key][$forms_col_number+1]=$value[3];
-                    }                    
-                }
+                    }                                    
 
 pt('processing '.'projects'.'/'.$project_name.'/'.$folder_to_process.' as list to process');
 flush();
@@ -327,7 +326,12 @@ foreach ($final_white_list as $key => $value) {// on parcours les lignes
         ptabg($forms);
         $lines2group=array();// list des clé des lignes de $final_white_list qu'il faudra grouper
         foreach ($forms as $key1 => $form) {
-            $val=strtolower($form);
+            if (strtoupper($form)!=$form){
+                $val=strtolower($form);    
+            }else{
+                $val=$form;    
+            }
+            
             $val=str_replace("'",'', $val);
             $val=str_replace("-",'', $val);
             $val=str_replace(" ",'', $val);
