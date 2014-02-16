@@ -49,6 +49,7 @@ $merged_lists=array();// white liste finale à écrire
 
 echo '-------- synonyms ---------';
 // on commence par importer des synonymes. Ils seront écrasés par les lignes suivantes si utilisés
+// format de fichier : tout les synonymes sur la même ligne séparés par des virgules.
 pt('processing '.'projects'.'/'.$project_name.'/'.$synonyms_folder.' as synonyms source');
 foreach (glob('projects'.'/'.$project_name.'/'.$synonyms_folder . "/*.csv") as $to_analyse) {
     if (($handle = fopen($to_analyse, "r","UTF-8")) !== FALSE) {    
@@ -94,12 +95,29 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
         while (($line= fgetcsv($handle, 4096,$delimiter)) !== false) {
             if ($raw_num==0){// analyse de la première ligne pour trouver les emplacements de colonnes obligatoires
                 $tag_column_number=array_search($tag_column, $line);
+                if (is_null($tag_column_number)){
+                    $tag_column_number=4;
+                }
                 pt("tag field:".$tag_column_number);
+                
                 $forms_col_number=array_search($forms_col, $line);
+                if (is_null($forms_col_number)){
+                    $forms_col_number=3;
+                }
                 pt("forms field:".$forms_col_number);
+                
                 $unique_id_column=array_search($unique_id, $line);                 
                 pt('unique id:'.$unique_id_column);
-                $main_form_column=array_search($main_form, $line);                 
+                if (is_null($unique_id_column)){
+                    $unique_id_column=1;
+                }
+
+                $main_form_column=array_search($main_form, $line);    
+                if (is_null($main_form_column)){
+                    $main_form_column=2;
+                }
+
+                $line_template=$line; // patron pour faire la white liste finale             
                 $raw_num+=1;                
             }else{// on stocke toutes les formes et on fait un pré-fichier de white liste
                 $newline=array();// nouvelle ligne à mettre dans le tableau définitif avec les champs obligatoires : 0->tag, 1->stem, 2->main form, 3->forms
@@ -167,6 +185,26 @@ foreach (glob('projects'.'/'.$project_name.'/'.$white_list_folder . "/*.csv") as
 
 }
 //$white_forms=array_keys($white_forms);
+if (is_null($tag_column_number)){
+    $tag_column_number=4;
+}
+if (is_null($forms_col_number)){
+    $forms_col_number=3;
+}
+pt("forms field:".$forms_col_number);
+
+pt('unique id:'.$unique_id_column);
+if (is_null($unique_id_column)){
+    $unique_id_column=1;
+}
+
+if (is_null($main_form_column)){
+    $main_form_column=2;
+}
+
+if (is_null($line_template)){
+    $line_template=array('unique_id','main_form','forms','tag');
+}
 
 
 if ($keep_all_whitewords==0){
@@ -182,7 +220,7 @@ $final_white_list=array(); // final white list with first column with tag w,x,g 
 
 
 // intègre les whites listes au nouveau format traité
-                    $line_template=$line; // patron
+                    
                     foreach ($line_template as $key => $value) {
                         $line_template[$key]='';
                     }
@@ -193,6 +231,8 @@ $final_white_list=array(); // final white list with first column with tag w,x,g 
                         $final_white_list[$key][$main_form_column+1]=$value[2];
                         $final_white_list[$key][$forms_col_number+1]=$value[3];
                     }                                    
+
+print_r($final_white_list);
 
 pt('processing '.'projects'.'/'.$project_name.'/'.$folder_to_process.' as list to process');
 flush();
